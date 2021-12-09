@@ -1,0 +1,4 @@
+2021-12-09 11:07:53,198 DEBUG :: This is a debugging message
+2021-12-09 11:07:53,198 INFO :: This is a debugging info
+2021-12-09 11:07:53,198 WARNING :: This is a debugging warning
+2021-12-09 11:07:53,198 ERROR :: This is a debugging error

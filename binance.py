@@ -3,7 +3,10 @@ import requests
 
 logger = logging.getLogger()
 
-"https://fapi.binance.com"
-"https://testnet.binancefutures.com"
 
-"wss://fstream.binance.com"
+def get_contracts():
+    response = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo")
+    print(response.status_code, response.json())
+
+
+get_contracts()

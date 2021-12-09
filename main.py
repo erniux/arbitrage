@@ -1,5 +1,6 @@
 import tkinter as tk
 import logging
+from bitmex import get_contracts
 
 logger = logging.getLogger()
 
@@ -24,5 +25,11 @@ logger.error("This is a debugging error")
 
 
 if __name__=='__main__':
+
+    bitmex = get_contracts()
     root = tk.Tk()
+
+    for contract in bitmex:
+        label_widget = tk.Label(root, contract)
+
     root.mainloop()

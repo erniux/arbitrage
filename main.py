@@ -1,6 +1,7 @@
 import tkinter as tk
 import logging
-from bitmex import get_contracts
+import secrets
+from connectors.binance import BinanceClient
 
 logger = logging.getLogger()
 
@@ -18,18 +19,9 @@ file_handler.setLevel(logging.DEBUG)
 logger.addHandler(stream_handler)
 logger.addHandler(file_handler)
 
-logger.debug("This is a debugging message")
-logger.info("This is a debugging info")
-logger.warning("This is a debugging warning")
-logger.error("This is a debugging error")
-
-
 if __name__=='__main__':
 
-    bitmex = get_contracts()
+    binance = BinanceClient(secrets.BINANCE_FUTURE_TESTNET_API_KEY, secrets.BINANCE_FUTURE_TESTNET_SECRET_KEY, True) 
+
     root = tk.Tk()
-
-    for contract in bitmex:
-        label_widget = tk.Label(root, contract)
-
     root.mainloop()

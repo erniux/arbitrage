@@ -6,6 +6,7 @@ import hmac
 import websocket
 import threading
 import json
+from models import *
 
 from urllib.parse import urlencode
 
@@ -79,9 +80,10 @@ class BinanceClient:
 
         if raw_candles is not None:
             for candle in raw_candles:
-                candles.append([candle[0], float(candle[1]), float(candle[2]), float(candle[3]), float(candle[4]), float(candle[5])])
+                candles.append(Candle(candle))
 
         return candles
+        
 
     def get_bid_ask(self, symbol):
         
@@ -116,7 +118,9 @@ class BinanceClient:
 
         if account_data is not None:
             for asset in account_data['assets']:
-                balances[asset['asset']] = asset       
+                balances[asset['asset']] = Balance(asset)    
+
+        print(balances['USDT'].wallet_balance)
 
         return balances
    
@@ -178,11 +182,11 @@ class BinanceClient:
         logger.error("Binance connection errpr %s", msg)
 
     def on_message(self, ws, msg):
-        data = json.load(msg)
+        data = json.loads(msg)
 
-        if "e" in data:
+        if 'e' in data:
             if data['e'] == "bookTicker":
-                symbol = data["s"]
+                symbol = data['s']
 
             if symbol not in self.prices:
                 self.prices[symbol] = {

@@ -23,5 +23,6 @@ if __name__=='__main__':
 
     binance = BinanceClient(secrets.BINANCE_FUTURE_TESTNET_API_KEY, secrets.BINANCE_FUTURE_TESTNET_SECRET_KEY, True) 
 
+    binance.get_balances()
     root = tk.Tk()
     root.mainloop()

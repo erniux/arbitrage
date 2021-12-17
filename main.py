@@ -1,6 +1,7 @@
 import logging
 
 from connectors.binance import BinanceClient
+from connectors.coinbase import CoinbaseClient
 from interface.root_component import Root
 import secrets
 
@@ -23,6 +24,9 @@ logger.addHandler(file_handler)
 if __name__=='__main__':
 
     binance = BinanceClient( secrets.BINANCE_FUTURE_TESTNET_API_KEY, secrets.BINANCE_FUTURE_TESTNET_SECRET_KEY, True) 
-    
-    root = Root(binance)
-    root.mainloop()
+    coinbase = CoinbaseClient(secrets.COINBASE_API_KEY, secrets.COINBASE_SECRET_KEY, True)
+
+    print(coinbase.get_products())
+
+    #root = Root(binance)
+    #root.mainloop()

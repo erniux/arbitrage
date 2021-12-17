@@ -1,7 +1,8 @@
-import tkinter as tk
 import logging
-import secrets
+
 from connectors.binance import BinanceClient
+from interface.root_component import Root
+import secrets
 
 logger = logging.getLogger()
 
@@ -21,8 +22,7 @@ logger.addHandler(file_handler)
 
 if __name__=='__main__':
 
-    binance = BinanceClient(secrets.BINANCE_FUTURE_TESTNET_API_KEY, secrets.BINANCE_FUTURE_TESTNET_SECRET_KEY, True) 
-
-    binance.get_balances()
-    root = tk.Tk()
+    binance = BinanceClient( secrets.BINANCE_FUTURE_TESTNET_API_KEY, secrets.BINANCE_FUTURE_TESTNET_SECRET_KEY, True) 
+    
+    root = Root(binance)
     root.mainloop()

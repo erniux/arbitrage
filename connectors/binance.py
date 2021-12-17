@@ -35,10 +35,16 @@ class BinanceClient:
         self._ws_id = 1
         self._ws = None
 
+        self.logs = []
+
         t = threading.Thread(target=self._start_ws)
         t.start()     
         
         logger.info("Binance Futures Clien succesfully initialized")
+
+    def _add_log(self, msg):
+        logger.info("%s", msg)
+        self.logs.append({"log": msg, "displayed": False})
 
     def _generate_signature(self, data):
         return hmac.new(self._secret_key.encode(), urlencode(data).encode(), hashlib.sha256).hexdigest()
@@ -221,8 +227,9 @@ class BinanceClient:
             else:
                 self.prices[symbol]['bid'] = float(data['b'])
                 self.prices[symbol]['ask'] = float(data['a'])
-        
-            print(self.prices[symbol])   
+
+            if symbol == "BTCUSDT":
+                self._add_log(symbol + " " + str(self.prices[symbol]['bid']) + "/" + str(self.prices[symbol]['ask']))
     
     def subscribe_channel(self, contracts: typing.List[Contract], channel: str):
         data = dict()
@@ -237,6 +244,6 @@ class BinanceClient:
         try:
             self._ws.send(json.dumps(data))
         except Exception as e:
-            logger.error("Connection error while subscribing to %s: %s ", contract.symbol, e)
+            logger.error("Connection error while subscribing to %s in %s updates: %s ", len(contracts), channel, e)
             
         self._ws_id += 1

@@ -22,11 +22,6 @@ class CoinbaseClient:
         self._secret_key = secret_key
         self._api_version = '2021-11-23'
 
-'''
-
-API_KEY = '5bZPI3mseW86TjkP'
-API_SECRET = 'yafd7x02Vt7zL3qrb9NG77KgSxsttWAd'
-USER_ID = 'db3d3967-3621-56ae-946c-cf5e2d9134fe'
 
 
 class CoinbaseWalletAuth(AuthBase):

@@ -1,6 +1,9 @@
 import logging
 import tkinter as tk
 from connectors.binance_client import BinanceClient
+from connectors.bitmex_client import BitmexClient
+
+import pprint
 
 logger = logging.getLogger()
 
@@ -21,8 +24,7 @@ logger.addHandler(file_handler)
 if __name__ == '__main__':
 
     binance = BinanceClient(True)
-    candles = binance.get_historical_candles()
-    print(candles[-1].low)
+    pprint.pprint(binance.get_contracts())
 
     root = tk.Tk()
     root.mainloop()

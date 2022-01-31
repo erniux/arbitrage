@@ -1,10 +1,15 @@
 
 
 class Balance:
-    def __init__(self, info):
-        self.asset = info['asset']
-        self.free = float(info['free'])
-        self.locked = float(info['locked'])
+    def __init__(self, info, exchange):
+        if exchange == 'binance':
+            self.asset = info['asset']
+            self.free = float(info['free'])
+            self.locked = float(info['locked'])
+        elif exchange == 'bitmex':
+            self.asset = info['asset']
+            self.free = float(info['free'])
+            self.locked = float(info['locked'])
 
 
 class Candle:
@@ -18,13 +23,20 @@ class Candle:
 
 
 class Contract:
-    def __int__(self, contract_info):
-        self.symbol = contract_info['symbol']
-        self.base = contract_info['baseAsset']
-        self.quote = contract_info['quoteAsset']
-        self.base_asset_precision = contract_info["baseAssetPrecision"]
-        self.quote_precision = contract_info["quotePrecision"]
-        self.quote_asset_precision = contract_info["quoteAssetPrecision"]
+    def __init__(self, contract_info, exchange):
+        if exchange == 'binance':
+            self.symbol = contract_info['symbol']
+            self.base = contract_info['baseAsset']
+            self.quote = contract_info['quoteAsset']
+            self.base_asset_precision = contract_info['baseAssetPrecision']
+            self.base_commission_precission = contract_info['baseCommissionPrecision']
+        elif exchange == 'bitmex':
+            self.symbol = contract_info['symbol']
+            self.base = contract_info['rootSymbol']
+            self.quote = contract_info['quoteCurrency']
+            self.base_asset_precision = contract_info["tickSize"]
+            self.quote_precision = contract_info["lotSize"]
+
 
 
 class OrderStatus:

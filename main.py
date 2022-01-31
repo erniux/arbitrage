@@ -21,7 +21,8 @@ logger.addHandler(file_handler)
 if __name__ == '__main__':
 
     binance = BinanceClient(True)
-    print(binance.get_contracts())
+    candles = binance.get_historical_candles()
+    print(candles[-1].low)
 
     root = tk.Tk()
     root.mainloop()

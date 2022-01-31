@@ -25,3 +25,12 @@ class Contract:
         self.base_asset_precision = contract_info["baseAssetPrecision"]
         self.quote_precision = contract_info["quotePrecision"]
         self.quote_asset_precision = contract_info["quoteAssetPrecision"]
+
+
+class OrderStatus:
+    def __init__(self, order_info):
+        self.order_id = order_info['orderId']
+        self.status = order_info['status']
+        self.price = order_info['price']
+        self.original_qty = order_info['origQty']
+        self.execued_qty = order_info['executedQty']

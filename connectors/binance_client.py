@@ -8,15 +8,16 @@ import websocket
 import threading
 import json
 import logging
+import typing
 
 import secrets
-from models import Balance, Candle, Contract
+from models import Balance, Candle, Contract, OrderStatus
 
 logger = logging.getLogger()
 
 
 class BinanceClient:
-    def __init__(self, testnet):
+    def __init__(self, testnet: bool):
 
         logger.info("BINANCE SE HA INICIADO...")
 
@@ -52,14 +53,14 @@ class BinanceClient:
         t = threading.Thread(target=self.start_ws())
         t.start
 
-    def generate_signature(self, data):
+    def generate_signature(self, data: typing.Dict):
         return hmac.new(self.secret_key.encode("utf-8"), urlencode(data).encode("utf-8"), hashlib.sha256).hexdigest()
 
     def get_timestamp(self):
         server_time = self.make_request("GET", "/api/v3/time", None)
         return server_time['serverTime']
 
-    def make_request(self, method, endpoint, data):
+    def make_request(self, method: str, endpoint: str, data: typing.Dict):
         if method == 'GET':
             response = requests.get(self.base_url + endpoint, params=data, headers=self.headers)
         elif method == 'POST':
@@ -81,14 +82,13 @@ class BinanceClient:
         if markets is not None:
             for m in markets['symbols']:
                 print(m['quoteAsset'], m)
-                if m['quoteAsset'] != "BUSD":
-                    contracts[m['symbol']] = Contract(m)
+                contracts[m['symbol']] = m  # Contract(m)
 
         return contracts
 
-    def get_historical_candles(self, symbol, interval, limit=1000):
+    def get_historical_candles(self, contract: Contract, interval: str, limit=1000):
 
-        raw_candles = self.e_binance.fetch_ohlcv(symbol, interval, limit)
+        raw_candles = self.e_binance.fetch_ohlcv(contract.symbol, interval, limit)
         candles = []
         if raw_candles is not None:
             for c in raw_candles:
@@ -96,17 +96,17 @@ class BinanceClient:
 
         return candles
 
-    def get_bid_ask(self, symbol):
-        tickers = self.e_binance.fetch_ticker(symbol)
+    def get_bid_ask(self, contract: Contract):
+        tickers = self.e_binance.fetch_ticker(contract.symbol)
 
         if tickers is not None:
-            if symbol not in self.prices:
-                self.prices[symbol] = {'bid': float(tickers['bid']), 'ask': float(tickers['ask'])}
+            if contract.symbol not in self.prices:
+                self.prices[contract.symbol] = {'bid': float(tickers['bid']), 'ask': float(tickers['ask'])}
             else:
-                self.prices[symbol]['bid'] = float(tickers['bid'])
-                self.prices[symbol]['ask'] = float(tickers['ask'])
+                self.prices[contract.symbol]['bid'] = float(tickers['bid'])
+                self.prices[contract.symbol]['ask'] = float(tickers['ask'])
 
-            return self.prices[symbol]
+            return self.prices[contract.symbol]
 
     def get_balances(self):
         balances = dict()
@@ -117,9 +117,9 @@ class BinanceClient:
 
         return balances
 
-    def place_order(self, symbol, side, quantity, order_type, price=None, tif=None):
+    def place_order(self, contract: Contract, side: str, quantity: float, order_type: str, price=None, tif=None):
         data = dict()
-        data['symbol'] = symbol
+        data['symbol'] = contract.symbol
         data['side'] = side
         data['quantity'] = quantity
         data['type'] = order_type
@@ -135,27 +135,35 @@ class BinanceClient:
 
         order_status = self.make_request("POST", "/api/v3/order", data)
 
+        if order_status is not None:
+            order_status = OrderStatus(order_status)
+
         return order_status
 
-    def cancel_order(self, symbol, order_id):
+    def cancel_order(self, contract: Contract, order_id: int):
         data = dict()
         data['orderId'] = order_id
-        data['symbol'] = symbol
+        data['symbol'] = contract.symbol
         data['timestamp'] = int(time.time() * 1000)
         data['signature'] = self.generate_signature(data)
 
         order_status = self.make_request("DELETE", "/api/v3/order", data)
 
+        if order_status is not None:
+            order_status = OrderStatus(order_status)
+
         return order_status
 
-    def get_order_status(self, symbol, order_id):
+    def get_order_status(self, contract: Contract, order_id: id):
         data = dict()
         data['orderId'] = order_id
-        data['symbol'] = symbol
+        data['symbol'] = contract.symbol
         data['timestamp'] = int(time.time() * 1000)
         data['signature'] = self.generate_signature(data)
 
         order_status = self.make_request("GET", "/api/v3/order", data)
+        if order_status is not None:
+            order_status = OrderStatus(order_status)
 
         return order_status
 
@@ -167,16 +175,18 @@ class BinanceClient:
         orders_open = self.make_request("GET", "/api/v3/openOrders", data)
 
         if orders_open is not None:
-            for o in orders_open:
-                print(o)
+            return orders_open
 
-    def cancel_open_orders(self, symbol):
+    def cancel_open_orders(self, contract: Contract):
         data = dict()
-        data['symbol'] = symbol
+        data['symbol'] = contract.symbol
         data['timestamp'] = int(time.time() * 1000)
         data['signature'] = self.generate_signature(data)
 
-        orders_open = self.make_request("DELETE", "/api/v3/openOrders", data)
+        orders_cancel = self.make_request("DELETE", "/api/v3/openOrders", data)
+
+        if orders_cancel is not None:
+            return orders_cancel
 
     def start_ws(self):
         self.ws = websocket.WebSocketApp(self.wss_url, on_open=self.on_open, on_close=self.on_close,
@@ -189,12 +199,12 @@ class BinanceClient:
         self.subscribe_channel("BTCUSDT")
 
     def on_close(self, ws):
-        logger.info("Conexicon cerrada en Binance")
+        logger.info("Conexion cerrada en Binance")
 
-    def on_error(self, msg):
+    def on_error(self, msg: str):
         logger.error(f"Error de conexión Binance {msg}")
 
-    def on_message(self, ws, msg):
+    def on_message(self, ws, msg: str):
         data = json.loads(msg)
         if "s" in data:
             symbol = data['s']
@@ -206,12 +216,11 @@ class BinanceClient:
 
                 print(symbol, self.prices[symbol])
 
-
-    def subscribe_channel(self, symbol):
+    def subscribe_channel(self, contract: Contract):
         data = dict()
         data['method'] = "SUBSCRIBE"
         data['params'] = []
-        data['params'].append(symbol.lower() + "@bookTicker")
+        data['params'].append(contract.symbol.lower() + "@bookTicker")
         data['id'] = self.id
 
         self.ws.send(json.dumps(data))

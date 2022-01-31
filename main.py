@@ -1,9 +1,6 @@
 import logging
-
-from connectors.binance import BinanceClient
-from connectors.coinbase import CoinbaseClient
-from interface.root_component import Root
-import secrets
+import tkinter as tk
+from connectors.binance_client import BinanceClient
 
 logger = logging.getLogger()
 
@@ -21,12 +18,10 @@ file_handler.setLevel(logging.DEBUG)
 logger.addHandler(stream_handler)
 logger.addHandler(file_handler)
 
-if __name__=='__main__':
+if __name__ == '__main__':
 
-    binance = BinanceClient( secrets.BINANCE_FUTURE_TESTNET_API_KEY, secrets.BINANCE_FUTURE_TESTNET_SECRET_KEY, True) 
-    coinbase = CoinbaseClient(secrets.COINBASE_API_KEY, secrets.COINBASE_SECRET_KEY, True)
+    binance = BinanceClient(True)
+    print(binance.get_contracts())
 
-    print(coinbase.get_products())
-
-    #root = Root(binance)
-    #root.mainloop()
+    root = tk.Tk()
+    root.mainloop()

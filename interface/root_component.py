@@ -1,7 +1,7 @@
 import tkinter as tk
 from interface.styling import *
 from interface.logging_component import Logging
-from connectors.binance import BinanceClient
+
 
 
 class Root(tk.Tk):

@@ -48,8 +48,8 @@ class BinanceClient:
         self._ws_id = 1
         self._ws = None
 
-        t = threading.Thread(target=self._start_ws())
-        t.start()
+        # t = threading.Thread(target=self._start_ws())
+        # t.start()
 
         logger.info("BINANCE SE HA INICIADO...")
 
@@ -78,7 +78,7 @@ class BinanceClient:
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f"ERROR EN REQUEST {method}, {endpoint}: {response.json()}, {response.status_code} ")
+            logger.error("CANT DETERMNE WHAT HAPPENED %s", response.status_code)
 
     def get_contracts(self):
         exchange_info = self._make_request("GET", "/api/v3/exchangeInfo", None)
@@ -86,9 +86,21 @@ class BinanceClient:
 
         if exchange_info is not None:
             for contract_data in exchange_info['symbols']:
-                contracts[contract_data['symbol']] = contract_data  # Contract(contract_data, "binance")
+                contracts[contract_data['symbol']] = Contract(contract_data, "binance")
 
         return contracts
+
+    def get_balances(self):
+        data = dict()
+        data['timestamp'] = int(time.time() * 1000)
+        data['signature'] = self._generate_signature(data)
+        account_data = self._make_request("GET", "/api/v3/account", data)
+        balances = dict()
+        if account_data is not None:
+            for a in account_data['balances']:
+                balances[a['asset']] = Balance(a, "binance")
+
+        return balances
 
     def get_historical_candles(self, contract: Contract, interval: str, limit=1000):
 
@@ -96,7 +108,7 @@ class BinanceClient:
         candles = []
         if raw_candles is not None:
             for c in raw_candles:
-                candles.append(Candle(c))
+                candles.append(Candle(c, 'binance'))
 
         return candles
 
@@ -111,15 +123,6 @@ class BinanceClient:
                 self.prices[contract.symbol]['ask'] = float(tickers['ask'])
 
             return self.prices[contract.symbol]
-
-    def get_balances(self):
-        balances = dict()
-        account_data = self._e_binance.fetch_balance()
-        if account_data is not None:
-            for a in account_data['info']['balances']:
-                balances[a['asset']] = Balance(a)
-
-        return balances
 
     def place_order(self, contract: Contract, side: str, quantity: float, order_type: str, price=None, tif=None):
         data = dict()
@@ -140,7 +143,7 @@ class BinanceClient:
         order_status = self._make_request("POST", "/api/v3/order", data)
 
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status, 'binance')
 
         return order_status
 
@@ -154,7 +157,7 @@ class BinanceClient:
         order_status = self._make_request("DELETE", "/api/v3/order", data)
 
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status, 'binance')
 
         return order_status
 
@@ -167,7 +170,7 @@ class BinanceClient:
 
         order_status = self._make_request("GET", "/api/v3/order", data)
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status, 'binance')
 
         return order_status
 

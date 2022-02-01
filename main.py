@@ -24,7 +24,9 @@ logger.addHandler(file_handler)
 if __name__ == '__main__':
 
     binance = BinanceClient(True)
-    pprint.pprint(binance.get_contracts())
+    bitmex = BitmexClient(True)
+
+    print(bitmex.get_open_orders())
 
     root = tk.Tk()
     root.mainloop()

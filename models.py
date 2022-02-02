@@ -1,3 +1,4 @@
+from datetime import datetime
 
 BITMEX_MULTIPLIER = 0.00000001
 
@@ -17,19 +18,19 @@ class Balance:
 class Candle:
     def __init__(self, info, exchange):
         if exchange == 'binance':
-            self.timestamp = info[0]
+            self.timestamp = datetime.fromtimestamp(int(info[0]/1000))
             self.open = float(info[1])
             self.high = float(info[2])
             self.low = float(info[3])
             self.close = float(info[4])
             self.volume = float(info[5])
         elif exchange == 'bitmex':
-            self.timestamp = info['timestamp']
-            self.open = info['open']
-            self.high = info['high']
-            self.low = info['low']
-            self.close = info['close']
-            self.volume = info['volume']
+            self.timestamp = datetime.fromtimestamp(int(info[0]/1000))
+            self.open = info[1]
+            self.high = info[2]
+            self.low = info[3]
+            self.close = info[4]
+            self.volume = info[5]
 
 
 class Contract:
@@ -38,14 +39,18 @@ class Contract:
             self.symbol = contract_info['symbol']
             self.base = contract_info['baseAsset']
             self.quote = contract_info['quoteAsset']
-            self.base_asset_precision = contract_info['baseAssetPrecision']
-            self.base_commission_precission = contract_info['baseCommissionPrecision']
+            self.filters = contract_info['filters']
+            filters = contract_info['filters']
+            for f in filters:
+                if f['filterType'] == 'PRICE_FILTER':
+                    self.tick_size = f['tickSize']
+
         elif exchange == 'bitmex':
             self.symbol = contract_info['symbol']
-            self.base = contract_info['rootSymbol']
+            self.r = contract_info['rootSymbol']
             self.quote = contract_info['quoteCurrency']
-            self.base_asset_precision = contract_info["tickSize"]
-            self.quote_precision = contract_info["lotSize"]
+            self.tick_size = contract_info["tickSize"]
+            self.lot_size = contract_info["lotSize"]
 
 
 class OrderStatus:

@@ -2,7 +2,7 @@ import logging
 import tkinter as tk
 from connectors.binance_client import BinanceClient
 from connectors.bitmex_client import BitmexClient
-
+from interface.root_component import Root
 import pprint
 
 logger = logging.getLogger()
@@ -26,7 +26,5 @@ if __name__ == '__main__':
     binance = BinanceClient(True)
     bitmex = BitmexClient(True)
 
-    print(bitmex.get_open_orders())
-
-    root = tk.Tk()
+    root = Root(binance, bitmex)
     root.mainloop()

@@ -45,13 +45,19 @@ class BinanceClient:
         self.balances = self.get_balances()
         self.prices = dict()
 
+        self.logs = []
+
         self._ws_id = 1
         self._ws = None
 
-        # t = threading.Thread(target=self._start_ws())
-        # t.start()
+        t = threading.Thread(target=self._start_ws)
+        t.start()
 
         logger.info("BINANCE SE HA INICIADO...")
+
+    def _add_log(self, msg: str):
+        logger.info(f"{msg}")
+        self.logs.append({"log": msg, "displayed": False})
 
     def _generate_signature(self, data: typing.Dict):
         return hmac.new(self._secret_key.encode("utf-8"), urlencode(data).encode("utf-8"), hashlib.sha256).hexdigest()
@@ -196,36 +202,41 @@ class BinanceClient:
             return orders_cancel
 
     def _start_ws(self):
-        self.ws = websocket.WebSocketApp(self._wss_url, on_open=self._on_open, on_close=self._on_close,
-                                         on_message=self._on_message, on_error=self._on_error)
+        self._ws = websocket.WebSocketApp(self._wss_url, on_open=self._on_open, on_close=self._on_close,
+                                         on_error=self._on_error, on_message=self._on_message)
+
         while True:
             try:
-                self.ws.run_forever()
+                self._ws.run_forever()
             except Exception as e:
-                logger.error(f"Error en el metodo 'run_forever' Binance: {e}")
+                logger.error("Binance error in run_forever() method: %s", e)
             time.sleep(2)
 
     def _on_open(self, ws):
-        logger.info("Conexion abierta en Binance")
+        logger.info("Binance connection opened")
+
         self.subscribe_channel(list(self.contracts.values()), "bookTicker")
 
     def _on_close(self, ws):
-        logger.info("Conexion cerrada en Binance")
+        logger.warning("Binance Websocket connection closed")
 
-    def _on_error(self, msg):
-        logger.error(f"Error de conexión Binance {msg}")
+    def _on_error(self, ws, msg: str):
+        logger.error("Binance connection error: %s", msg)
 
     def _on_message(self, ws, msg: str):
-        data = json.loads(msg)
-        if "s" in data:
-            symbol = data['s']
-            if symbol not in self.prices:
-                self.prices[symbol] = {'bid': float(data['b']), 'ask': float(data['a'])}
-            else:
-                self.prices[symbol]['bid'] = float(data['b'])
-                self.prices[symbol]['ask'] = float(data['a'])
 
-                print(symbol, self.prices[symbol])
+        data = json.loads(msg)
+
+        if "e" in data:
+            if data['e'] == "bookTicker":
+
+                symbol = data['s']
+
+                if symbol not in self.prices:
+                    self.prices[symbol] = {'bid': float(data['b']), 'ask': float(data['a'])}
+                else:
+                    self.prices[symbol]['bid'] = float(data['b'])
+                    self.prices[symbol]['ask'] = float(data['a'])
 
     def subscribe_channel(self, contracts: typing.List[Contract], channel: str):
         data = dict()
@@ -234,9 +245,10 @@ class BinanceClient:
         for contract in contracts:
             data['params'].append(contract.symbol.lower() + "@" + channel)
         data['id'] = self._ws_id
+
         try:
-            self.ws.send(json.dumps(data))
+            self._ws.send(json.dumps(data))
         except Exception as e:
-            logger.error(f"Error en websocket al actualizar {len(contracts)}, {channel} :: {e}")
+            logger.error("Websocket error while subscribing to %s %s updates: %s", len(contracts), channel, e)
 
         self._ws_id += 1

@@ -47,12 +47,18 @@ class BitmexClient:
 
         self.prices = dict()
 
-        # t = threading.Thread(target=self._self.start_ws)
-        # t.start()
+        self.logs = []
+
+        t = threading.Thread(target=self._start_ws)
+        t.start()
 
         logger.info("BITMEX SE HA INICIADO...")
 
-    def _generate_signature(self, method: str, endpoint: str,  expires: str, data: typing.Dict):
+    def _add_log(self, msg: str):
+        logger.info(f"{msg}")
+        self.logs.append({"log": msg, "displayed": False})
+
+    def _generate_signature(self, method: str, endpoint: str, expires: str, data: typing.Dict):
         message = method + endpoint + "?" + urlencode(data) + expires if len(data) > 0 else method + endpoint + expires
         return hmac.new(self._secret_key.encode("utf-8"), message.encode("utf-8"), hashlib.sha256).hexdigest()
 
@@ -84,7 +90,8 @@ class BitmexClient:
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f"ERROR EN REQUEST {method}, {endpoint}: {response.json()}, {response.status_code}, {response.request.headers} ")
+            logger.error(
+                f"ERROR EN REQUEST {method}, {endpoint}: {response.json()}, {response.status_code}, {response.request.headers} ")
 
     def get_contracts(self) -> typing.Dict[str, Contract]:
         instruments = self._make_request("GET", "/api/v1/instrument/active", dict())
@@ -110,15 +117,8 @@ class BitmexClient:
 
         return balances
 
-    def get_historical_candles(self, contract: Contract, interval: str, limit=1000):
-        data = dict()
-
-        data['symbol'] = contract.symbol
-        data['partial'] = True
-        data['binSize'] = interval
-        data['count'] = 500
-        raw_candles = self._make_request("GET", "api/v1/trade/bucketed", data)
-
+    def get_historical_candles(self, contract: Contract, timeframe: str):
+        raw_candles = self._e_bitmex.fetch_ohlcv(contract.symbol, timeframe)
         candles = []
         if raw_candles is not None:
             for c in raw_candles:
@@ -169,6 +169,49 @@ class BitmexClient:
                 if order['orderID'] == order_id:
                     return OrderStatus(order, 'bitmex')
 
+    def _start_ws(self):
+        self._ws = websocket.WebSocketApp(self._wss_url, on_open=self._on_open, on_close=self._on_close,
+                                          on_message=self._on_message, on_error=self._on_error)
+        while True:
+            try:
+                self._ws.run_forever()
+            except Exception as e:
+                logger.error(f"Error en el metodo 'run_forever' Bitmex: {e}")
+            time.sleep(2)
 
+    def _on_open(self, _ws):
+        logger.info("Conexion abierta en Bitmex")
+        self.subscribe_channel("instrument")
 
+    def _on_close(self, _ws):
+        logger.info("Conexion cerrada en Bitmex")
 
+    def _on_error(self, msg):
+        logger.error(f"Error de conexión Bitmex {msg}")
+
+    def _on_message(self, _ws, msg: str):
+        data = json.loads(msg)
+        if "table" in data:
+            if data['table'] == "instrument":
+                for d in data['data']:
+                    symbol = d['symbol']
+
+                    if symbol not in self.prices:
+                        self.prices[symbol] = {'bid': None, 'ask': None}
+
+                    if 'bidPrice' in d:
+                        self.prices[symbol]['bid'] = d['bidPrice']
+
+                    if 'askPrice' in d:
+                        self.prices[symbol]['ask'] = d['askPrice']
+
+    def subscribe_channel(self, topic: str):
+        data = dict()
+        data['op'] = "subscribe"
+        data['args'] = []
+        data['args'].append(topic)
+
+        try:
+            self._ws.send(json.dumps(data))
+        except Exception as e:
+            logger.error(f"Error en websocket de Bitmex al actualizar {topic} :: {e}")

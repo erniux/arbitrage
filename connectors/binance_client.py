@@ -12,6 +12,7 @@ import typing
 
 import secrets
 from models import Balance, Candle, Contract, OrderStatus
+from strategies import TechnicalStrategy, BreakoutStrategy
 
 logger = logging.getLogger()
 
@@ -44,6 +45,7 @@ class BinanceClient:
         self.contracts = self.get_contracts()
         self.balances = self.get_balances()
         self.prices = dict()
+        self.strategies: typing.Dict[int, typing.Union[TechnicalStrategy, BreakoutStrategy]] = dict()
 
         self.logs = []
 
@@ -56,7 +58,6 @@ class BinanceClient:
         logger.info("BINANCE SE HA INICIADO...")
 
     def _add_log(self, msg: str):
-        logger.info(f"{msg}")
         self.logs.append({"log": msg, "displayed": False})
 
     def _generate_signature(self, data: typing.Dict):
@@ -203,8 +204,7 @@ class BinanceClient:
 
     def _start_ws(self):
         self._ws = websocket.WebSocketApp(self._wss_url, on_open=self._on_open, on_close=self._on_close,
-                                         on_error=self._on_error, on_message=self._on_message)
-
+                                          on_error=self._on_error, on_message=self._on_message)
         while True:
             try:
                 self._ws.run_forever()
@@ -227,16 +227,17 @@ class BinanceClient:
 
         data = json.loads(msg)
 
-        if "e" in data:
-            if data['e'] == "bookTicker":
+        if "u" in data:
+            symbol = data['s']
 
-                symbol = data['s']
+            if symbol not in self.prices:
+                self.prices[symbol] = {'bid': float(data['b']), 'ask': float(data['a'])}
+            else:
+                self.prices[symbol]['bid'] = float(data['b'])
+                self.prices[symbol]['ask'] = float(data['a'])
 
-                if symbol not in self.prices:
-                    self.prices[symbol] = {'bid': float(data['b']), 'ask': float(data['a'])}
-                else:
-                    self.prices[symbol]['bid'] = float(data['b'])
-                    self.prices[symbol]['ask'] = float(data['a'])
+            # self._add_log(f"BINANCE::: {symbol} ::: BID :::: {str(self.prices[symbol]['bid'])} | "
+            #               f" ASK :::: {str(self.prices[symbol]['ask'])}")
 
     def subscribe_channel(self, contracts: typing.List[Contract], channel: str):
         data = dict()

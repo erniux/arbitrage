@@ -55,7 +55,6 @@ class BitmexClient:
         logger.info("BITMEX SE HA INICIADO...")
 
     def _add_log(self, msg: str):
-        logger.info(f"{msg}")
         self.logs.append({"log": msg, "displayed": False})
 
     def _generate_signature(self, method: str, endpoint: str, expires: str, data: typing.Dict):
@@ -182,6 +181,7 @@ class BitmexClient:
     def _on_open(self, _ws):
         logger.info("Conexion abierta en Bitmex")
         self.subscribe_channel("instrument")
+        self.subscribe_channel("trade")
 
     def _on_close(self, _ws):
         logger.info("Conexion cerrada en Bitmex")
@@ -204,6 +204,15 @@ class BitmexClient:
 
                     if 'askPrice' in d:
                         self.prices[symbol]['ask'] = d['askPrice']
+
+                    # if symbol == "XBTUSD":
+                    #     self._add_log(f"BITMEX ::: {symbol} ::: BID :::: {str(self.prices[symbol]['bid'])} | "
+                    #                   f" ASK :::: {str(self.prices[symbol]['ask'])}")
+
+            if data['table'] == "trade":
+                for d in data['data']:
+                    symbol = d['symbol']
+                    ts = d['timestamp']
 
     def subscribe_channel(self, topic: str):
         data = dict()

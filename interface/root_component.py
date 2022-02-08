@@ -6,9 +6,7 @@ from connectors.binance_client import BinanceClient
 from interface.styling import *
 from interface.logging_component import Logging
 from interface.watchlist_component import Watchlist
-from interface.trades_component import TradesWatch
-from interface.strategy_component import StrategyEditor
-
+from interface.balances_component import ExchangesBalances
 
 logger = logging.getLogger()
 
@@ -41,7 +39,8 @@ class Root(tk.Tk):
         self.logging_frame = Logging(self._left_frame, bg=BG_COLOR)
         self.logging_frame.pack(side=tk.TOP)
 
-        self._balances_frame = Balances(self.binance.balances, self.bitmex.balances, self._right_frame, bg=BG_COLOR)
+        self._balances_frame = ExchangesBalances(self.binance.balances, self.bitmex.balances, self._right_frame,
+                                                 bg=BG_COLOR)
         self._balances_frame.pack(side=tk.TOP)
 
         self._update_ui()

@@ -1,19 +1,17 @@
 import tkinter as tk
-import typing
 
 from interface.styling import *
+import typing
+from models import *
 
-from connectors.binance_client import BinanceClient
-from connectors.bitmex_client import BitmexClient
 
-
-class StrategyEditor(tk.Frame):
-    def __init__(self, root, binance: BinanceClient, bitmex: BitmexClient, *args, **kwargs):
+class ExchangesBalances(tk.Frame):
+    def __init__(self, binance_balances: typing.Dict[str, Balance], bitmex_balances: typing.Dict[str, Balance],
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.root = root
+        self.binance_symbols = list(binance_balances.items())
+        self.bitmex_symbols = list(bitmex_balances.items())
 
-        self._exchanges = {"Binance": binance, "Bitmex": bitmex}
-        for exchange, client in self._exchanges.items():
-            for symbol, contract in client.balances.items():
-                self._all_contracts.append(symbol + "_" + exchange.capitalize())
+
+
